@@ -16,5 +16,6 @@ Accessing the rest-API for information is through ethernet connection - 'eth0'
 
 Where STREAM_KIND can be one of two options:
 
-1. ROBOT - using robomaster camera
-2. CAMERA - using camera connected to the jetson
+- ROBOT - using robomaster camera
+- CAMERA - using camera connected to the jetson
+
