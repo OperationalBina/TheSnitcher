@@ -3,14 +3,13 @@
 import os
 import signal
 import sys
-
 from flask import Flask, jsonify
 import socket
 import fcntl
 import struct
 
-from src.stream.python_stream_liveview.camera_stream import CameraLiveview
-from src.stream.python_stream_liveview.robot_stream import RobotLiveview, ConnectionType
+from camera_stream import CameraLiveview
+from robot_stream import RobotLiveview, ConnectionType
 
 
 def get_ip_address(ifname):

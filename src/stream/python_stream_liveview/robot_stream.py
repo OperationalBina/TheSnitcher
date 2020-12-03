@@ -11,7 +11,7 @@ sys.path.append('../../connection/')
 
 import enum
 
-from src.connection import robot_connection
+from connection import robot_connection
 import libh264decoder
 
 
