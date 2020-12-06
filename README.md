@@ -8,14 +8,15 @@ In both options, the device must be connected to the jetson via usb port.
 Accessing the rest-API for information is through ethernet connection - 'eth0'
 
 ## Running the project:
-- load image moshe:v0.1 from the project folder
-- build image using the command:
-> docker build -t moshe:v0.2 . 
+- build image from the project folder using the command:
+> docker build -t snitcher . 
 - run the docker with the appropriate environment variable using:
-> docker run -it --network=host -e STREAM_KIND=$$$ moshe:v0.2
+> docker run -it --network=host -e STREAM_KIND=$$$ snitcher
 
 Where STREAM_KIND can be one of two options:
 
 - ROBOT - using robomaster camera
 - CAMERA - using camera connected to the jetson
+
+For support, open an issue.
 
