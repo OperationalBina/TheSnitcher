@@ -2,7 +2,7 @@ import queue
 import sys
 import threading
 import time
-
+import multiprocessing
 import numpy as np
 
 sys.path.append('../decoder/output/')
@@ -13,7 +13,7 @@ import enum
 #change
 import robot_connection
 import libh264decoder
-
+import PoseEstimation
 
 class ConnectionType(enum.Enum):
     WIFI_DIRECT = 1
@@ -26,7 +26,12 @@ class RobotLiveview(object):
     WIFI_NETWORKING_IP = ''
     USB_DIRECT_IP = '192.168.42.2'
 
-    def __init__(self, connection_type):
+    def __init__(self, connection_type, Pose):
+        """
+        Inputs:
+         - connection_type is according ConnectionType class
+         - Pose is a PoseEstimation instance
+        """
         self.connection = robot_connection.RobotConnection()
         self.connection_type = connection_type
 
@@ -40,6 +45,8 @@ class RobotLiveview(object):
         self.command_ack_list = []
 
         self.is_shutdown = True
+        self.frame_queue = multiprocessing.Queue(1)
+        self.read_proc = multiprocessing.Process(target=self.read_frames(), args=(self,))
         self.state = 0
         self.angles = ['20', '-20']
         self._threat_json = [
@@ -53,6 +60,7 @@ class RobotLiveview(object):
             }
         ]
         self.api_json = self._threat_json[self.state]
+        self.pose = Pose
 
     def open(self):
         if self.connection_type is ConnectionType.WIFI_DIRECT:
@@ -73,8 +81,16 @@ class RobotLiveview(object):
         self.video_decoder_thread.join()
         self.video_display_thread.join()
         self.connection.close()
+        self.read_proc.terminate()
+        self.read_proc.join()
 
     def display(self):
+        self.read_proc.start()
+        while not self.is_shutdown:
+            frame = self.frame_queue.get()
+            self.api_json = self.pose(frame)
+
+    def read_frames(self):
         self.command('command')
         time.sleep(1)
         self.command('stream on')
@@ -134,11 +150,13 @@ class RobotLiveview(object):
                     break
                 print('video decoder queue empty')
                 continue
-            count += 1
-            if count == 100:
-                count = 0
-                self.state = 1 - self.state
-                self.api_json = self._threat_json[self.state]
+            self.frame_queue.get(block=False)
+            self.frame_queue.put(frame)
+            # count += 1
+            # if count == 100:
+            #     count = 0
+            #     self.state = 1 - self.state
+            #     self.api_json = self._threat_json[self.state]
 
             # image = PImage.fromarray(frame)
             # img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)

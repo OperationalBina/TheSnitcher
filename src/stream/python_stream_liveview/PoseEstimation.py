@@ -14,7 +14,6 @@ class PoseEstimation:
                  width=224, height=224):
         with open('human_pose.json', 'r') as f:
             self.human_pose = json.load(f)
-
         self.topology = trt_pose.coco.coco_category_to_topology(self.human_pose)
         self.model_trt = TRTModule()
         self.model_trt.load_state_dict(torch.load(path_model))
@@ -40,7 +39,8 @@ class PoseEstimation:
         cmap, paf = cmap.detach().cpu(), paf.detach().cpu()
         counts, objects, peaks = self.parse_objects(cmap, paf)
         keypoints = self.get_keypoints(counts, objects, peaks)
-        return keypoints
+        json_pose = self.is_threat(keypoints)
+        return json_pose
 
     def preprocess(self, image):
         """
