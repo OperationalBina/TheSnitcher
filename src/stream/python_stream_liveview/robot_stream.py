@@ -13,7 +13,7 @@ import enum
 #change
 import robot_connection
 import libh264decoder
-import PoseEstimation
+# import PoseEstimation
 
 class ConnectionType(enum.Enum):
     WIFI_DIRECT = 1
@@ -26,11 +26,12 @@ class RobotLiveview(object):
     WIFI_NETWORKING_IP = ''
     USB_DIRECT_IP = '192.168.42.2'
 
-    def __init__(self, connection_type, Pose):
+    def __init__(self, connection_type, frame_queue):
         """
         Inputs:
-         - connection_type is according ConnectionType class
-         - Pose is a PoseEstimation instance
+         - connection_type: is according ConnectionType class
+         - Pose: is a PoseEstimation instance
+         - frame_queue: queue to push frames to
         """
         self.connection = robot_connection.RobotConnection()
         self.connection_type = connection_type
@@ -45,8 +46,9 @@ class RobotLiveview(object):
         self.command_ack_list = []
 
         self.is_shutdown = True
-        self.frame_queue = multiprocessing.Queue(1)
-        self.read_proc = multiprocessing.Process(target=self.read_frames(), args=(self,))
+        self.frame_queue = frame_queue
+        # self.frame_queue = multiprocessing.Queue(1)
+        # self.read_proc = multiprocessing.Process(target=self.read_frames, args=(self.frame_queue,))
         self.state = 0
         self.angles = ['20', '-20']
         self._threat_json = [
@@ -60,7 +62,7 @@ class RobotLiveview(object):
             }
         ]
         self.api_json = self._threat_json[self.state]
-        self.pose = Pose
+        # self.pose = Pose
 
     def open(self):
         if self.connection_type is ConnectionType.WIFI_DIRECT:
@@ -84,13 +86,16 @@ class RobotLiveview(object):
         self.read_proc.terminate()
         self.read_proc.join()
 
-    def display(self):
-        self.read_proc.start()
-        while not self.is_shutdown:
-            frame = self.frame_queue.get()
-            self.api_json = self.pose(frame)
+    # def display(self):
+    #     self.read_proc.start()
+    #     while not self.is_shutdown:
+    #         print('got into the loop of display')
+    #         frame = self.frame_queue.get()
+    #         print('got frame')
+    #         self.api_json = self.pose(frame)
 
-    def read_frames(self):
+    def display(self):
+        print(f'shut down status: {self.is_shutdown}')
         self.command('command')
         time.sleep(1)
         self.command('stream on')
@@ -119,6 +124,7 @@ class RobotLiveview(object):
         return res_frame_list
 
     def _video_decoder_task(self):
+        print('video_decoder')
         package_data = b''
 
         self.connection.start_video_recv()
@@ -141,15 +147,19 @@ class RobotLiveview(object):
         self.connection.stop_video_recv()
 
     def _video_display_task(self):
+        print('video_display')
         count = 0
+        print(f'sutdown status in video_display is: {self.is_shutdown}')
         while not self.is_shutdown:
             try:
+                print('trying to get video')
                 frame = self.video_decoder_msg_queue.get(timeout=2)
             except Exception as e:
                 if self.is_shutdown:
                     break
                 print('video decoder queue empty')
                 continue
+            print('got frame from decoder')
             self.frame_queue.get(block=False)
             self.frame_queue.put(frame)
             # count += 1
@@ -158,7 +168,7 @@ class RobotLiveview(object):
             #     self.state = 1 - self.state
             #     self.api_json = self._threat_json[self.state]
 
-            # image = PImage.fromarray(frame)
-            # img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-            # cv2.imshow("Liveview", img)
-            # cv2.waitKey(1)
+            image = PImage.fromarray(frame)
+            img = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+            cv2.imshow("Liveview", img)
+            cv2.waitKey(1)
