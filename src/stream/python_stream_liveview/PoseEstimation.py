@@ -87,11 +87,13 @@ class PoseEstimation:
         where there are people and are they a threat
         """
         json_pose = []
-        for i, person in enumerate(keypoints):
+        for person in keypoints:
             position = person.get('neck', person[list(person.keys())[0]])
             person_json = {
                 'msg': 'detected person',
                 'position': position
             }
             json_pose.append(person_json)
+        if len(json_pose) == 0:
+            json_pose = [{'msg': 'No person detected'}]
         return json_pose
