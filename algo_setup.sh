@@ -27,3 +27,7 @@ cd ../
 git clone https://github.com/NVIDIA-AI-IOT/trt_pose
 cd trt_pose
 python3 setup.py install
+
+# extracting weights (resnet18)
+cd ../stream/python_stream_liveview
+tar xvf resnet18_baseline_att_224x224_A_epoch_249_trt.tar.xz
