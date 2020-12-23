@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # installing torch
-# wget https://nvidia.box.com/shared/static/wa34qwrwtk9njtyarwt5nvo6imenfy26.whl -O torch-1.7.0-cp36-cp36m-linux_aarch64.whl
+wget https://nvidia.box.com/shared/static/wa34qwrwtk9njtyarwt5nvo6imenfy26.whl -O torch-1.7.0-cp36-cp36m-linux_aarch64.whl
 apt-get install libopenblas-base libopenmpi-dev
 pip3 install Cython
 pip3 install torch-1.7.0-cp36-cp36m-linux_aarch64.whl
