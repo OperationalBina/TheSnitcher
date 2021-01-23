@@ -23,17 +23,17 @@ def main(vid_path, output_dir):
 
             cv2.imwrite(frame_path, frame)
 
+            frame_num += 1
         else:
             break
-        frame_num += 1
 
     cap.release()
     cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
-    Data_dir = '../data'
-    Vid_file = '3_DJI_0279.MOV'
+    Data_dir = '../data/sim'
+    Vid_file = 'Peek 2021-01-23 18-00.mp4'
     Vid_path = os.path.join(Data_dir, Vid_file)
     Output_dir = os.path.join(Data_dir, f'{Vid_file[:-4]}_frames')
     main(Vid_path, Output_dir)
