@@ -74,3 +74,7 @@ class PoseEstimator:
             ax.axis('off')
 
         return drawn_img
+
+    def set_threshold(self, new_threshold):
+        self.cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = new_threshold
+        self.predictor = DefaultPredictor(self.cfg)
