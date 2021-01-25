@@ -7,6 +7,7 @@ import pickle
 
 import cv2
 import numpy as np
+import torch
 
 from src.algorithems import PoseEstimator
 
@@ -29,6 +30,10 @@ def decompose_single_image(image_path, file_name, output_dir):
 
     prediction = pe.get_full_prediction(img)
 
+    # end if there is no person detected
+    if len(prediction.scores) == 0:
+        return
+
     # save frame
     frame_path = os.path.join(output_dir, f'{file_name}_pred.jpg')
     pred_frame = pe.draw_prediction_on_image(img, prediction)
@@ -40,11 +45,13 @@ def decompose_single_image(image_path, file_name, output_dir):
         pickle.dump(prediction, f)
 
     # save key points of the most confident prediction
-    conf_pred_idx = np.argmax(prediction.scores)
+    conf_pred_idx = torch.argmax(prediction.scores)
     key_points = prediction.pred_keypoints[conf_pred_idx]
+
     key_points_dict = {'x': key_points[:, 0].tolist(),
                        'y': key_points[:, 1].tolist(),
-                       'v': key_points[:, 2].tolist()}
+                       'v': key_points[:, 2].tolist(),
+                       'bbox:': prediction.pred_boxes.tensor.tolist()[conf_pred_idx]}
     keypoints_path = os.path.join(output_dir, f'{file_name}_keypoints.json')
     with open(keypoints_path, 'w') as json_file:
         json.dump(key_points_dict, json_file)
@@ -77,7 +84,7 @@ def main(imgs_dir, output_dir):
 
 
 if __name__ == '__main__':
-    Images_folder = '../data/synth_aim'
+    Images_folder = '../data/OneDrive_1_1-25-2021_new'
     Output_folder = '../outputs/keypoints_datasets/synth_aim'
 
     main(Images_folder, Output_folder)

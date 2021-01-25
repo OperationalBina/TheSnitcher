@@ -7,6 +7,7 @@ import pickle
 
 import cv2
 import numpy as np
+import torch
 
 from src.algorithems import PoseEstimator
 
@@ -40,6 +41,11 @@ def decompose_single_vid(vid_path, file_name, output_dir):
             try:
                 prediction = pe.get_full_prediction(frame)
 
+                # end if there is no person detected
+                if len(prediction.scores) == 0:
+                    frame_num += 1
+                    continue
+
                 # save frame
                 frame_path = os.path.join(output_dir, f'{file_name}_frame_{frame_num}_pred.jpg')
                 pred_frame = pe.draw_prediction_on_image(frame, prediction)
@@ -51,11 +57,13 @@ def decompose_single_vid(vid_path, file_name, output_dir):
                     pickle.dump(prediction, f)
 
                 # save key points of the most confident prediction
-                conf_pred_idx = np.argmax(prediction.scores)
+                conf_pred_idx = torch.argmax(prediction.scores)
                 key_points = prediction.pred_keypoints[conf_pred_idx]
                 key_points_dict = {'x': key_points[:, 0].tolist(),
                                    'y': key_points[:, 1].tolist(),
-                                   'v': key_points[:, 2].tolist()}
+                                   'v': key_points[:, 2].tolist(),
+                                   'bbox:': prediction.pred_boxes.tensor.tolist()[conf_pred_idx]}
+
                 keypoints_path = os.path.join(output_dir, f'{file_name}_frame_{frame_num}_keypoints.json')
                 with open(keypoints_path, 'w') as json_file:
                     json.dump(key_points_dict, json_file)
@@ -100,7 +108,7 @@ def main(vids_dir, output_dir):
 
 
 if __name__ == '__main__':
-    Vid_folder = '../data/exmaple'
+    Vid_folder = '../data/vids'
     Output_folder = '../outputs/keypoints_datasets'
 
     main(Vid_folder, Output_folder)
