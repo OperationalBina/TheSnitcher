@@ -24,7 +24,7 @@ class VideoCapture(BaseComponent):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--infile', help='Input file (leave empty to use webcam)', nargs='?', type=str,
+    parser.add_argument('-i', '--infile', help='Input file (leave empty to use webcam)', nargs='?', type=int,
                         default=None)
     parser.add_argument('-o', '--output', help='Output stream key name', type=str, default='camera:0')
     parser.add_argument('-u', '--url', help='Redis URL', type=str, default='redis://127.0.0.1:6379')
