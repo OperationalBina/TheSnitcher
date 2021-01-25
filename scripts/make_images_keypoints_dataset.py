@@ -65,12 +65,15 @@ def main(imgs_dir, output_dir):
         os.makedirs(output_dir)
 
     for img_file in os.listdir(imgs_dir):
-        print(f'working on file {img_file}')
-        vid_path = os.path.join(imgs_dir, img_file)
+        try:
+            print(f'working on file {img_file}')
+            vid_path = os.path.join(imgs_dir, img_file)
 
-        file_name = os.path.splitext(img_file)[0]
+            file_name = os.path.splitext(img_file)[0]
 
-        decompose_single_image(vid_path, file_name, output_dir)
+            decompose_single_image(vid_path, file_name, output_dir)
+        except Exception as e:
+            print(f'Something went wrong: {str(e)}')
 
 
 if __name__ == '__main__':

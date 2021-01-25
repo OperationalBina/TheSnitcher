@@ -37,27 +37,31 @@ def decompose_single_vid(vid_path, file_name, output_dir):
         ret, frame = cap.read()
         if ret:
             print(f'\rworking on frame {frame_num}/{num_frames}', end='', flush=True)
-            prediction = pe.get_full_prediction(frame)
+            try:
+                prediction = pe.get_full_prediction(frame)
 
-            # save frame
-            frame_path = os.path.join(output_dir, f'{file_name}_frame_{frame_num}_pred.jpg')
-            pred_frame = pe.draw_prediction_on_image(frame, prediction)
-            cv2.imwrite(frame_path, pred_frame[:, :, ::-1])
+                # save frame
+                frame_path = os.path.join(output_dir, f'{file_name}_frame_{frame_num}_pred.jpg')
+                pred_frame = pe.draw_prediction_on_image(frame, prediction)
+                cv2.imwrite(frame_path, pred_frame[:, :, ::-1])
 
-            # save predication
-            prediction_path = os.path.join(output_dir, f'{file_name}_frame_{frame_num}_pred.pkl')
-            with open(prediction_path, 'bw') as f:
-                pickle.dump(prediction, f)
+                # save predication
+                prediction_path = os.path.join(output_dir, f'{file_name}_frame_{frame_num}_pred.pkl')
+                with open(prediction_path, 'bw') as f:
+                    pickle.dump(prediction, f)
 
-            # save key points of the most confident prediction
-            conf_pred_idx = np.argmax(prediction.scores)
-            key_points = prediction.pred_keypoints[conf_pred_idx]
-            key_points_dict = {'x': key_points[:, 0].tolist(),
-                               'y': key_points[:, 1].tolist(),
-                               'v': key_points[:, 2].tolist()}
-            keypoints_path = os.path.join(output_dir, f'{file_name}_frame_{frame_num}_keypoints.json')
-            with open(keypoints_path, 'w') as json_file:
-                json.dump(key_points_dict, json_file)
+                # save key points of the most confident prediction
+                conf_pred_idx = np.argmax(prediction.scores)
+                key_points = prediction.pred_keypoints[conf_pred_idx]
+                key_points_dict = {'x': key_points[:, 0].tolist(),
+                                   'y': key_points[:, 1].tolist(),
+                                   'v': key_points[:, 2].tolist()}
+                keypoints_path = os.path.join(output_dir, f'{file_name}_frame_{frame_num}_keypoints.json')
+                with open(keypoints_path, 'w') as json_file:
+                    json.dump(key_points_dict, json_file)
+
+            except Exception as e:
+                print(f'something went wrong: {str(e)}')
 
             frame_num += 1
 
@@ -87,7 +91,11 @@ def main(vids_dir, output_dir):
         file_name = os.path.splitext(vid_file)[0]
         vid_output_dir = os.path.join(output_dir, file_name)
 
-        decompose_single_vid(vid_path, file_name, vid_output_dir)
+        try:
+            decompose_single_vid(vid_path, file_name, vid_output_dir)
+        except Exception as e:
+            print(f'something went wrong: {str(e)}')
+
         print()
 
 
