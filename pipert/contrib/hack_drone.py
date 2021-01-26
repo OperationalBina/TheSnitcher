@@ -14,7 +14,7 @@ Controls:
 - Z to toggle camera zoom state
   (zoomed-in widescreen or high FOV 4:3)
 """
-
+import av
 import time
 import sys
 import tellopy
@@ -27,6 +27,30 @@ import os
 import datetime
 from subprocess import Popen, PIPE
 # from tellopy import logger
+
+# Some basic setup:
+# Setup detectron2 logger
+import detectron2
+from detectron2.utils.logger import setup_logger
+setup_logger()
+
+# import some common libraries
+import numpy as np
+import os, json, cv2, random
+
+# import some common detectron2 utilities
+from detectron2 import model_zoo
+from detectron2.engine import DefaultPredictor
+from detectron2.config import get_cfg
+from detectron2.utils.visualizer import Visualizer
+from detectron2.data import MetadataCatalog, DatasetCatalog
+
+cfg = get_cfg()
+# # add project-specific config (e.g., TensorMask) here if you're not running a model in detectron2's core library
+cfg.merge_from_file(model_zoo.get_config_file("COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x.yaml"))
+cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7  # set threshold for this model
+cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url("COCO-Keypoints/keypoint_rcnn_R_50_FPN_3x.yaml")
+predictor = DefaultPredictor(cfg)
 
 # log = tellopy.logger.Logger('TelloUI')
 
@@ -195,7 +219,7 @@ def videoFrameHandler(event, sender, data):
     if video_player is None:
         cmd = [ 'mplayer', '-fps', '35', '-really-quiet' ]
         if wid is not None:
-            cmd = cmd + [ '-wid', str(wid) ]
+            cmd = cmd + [ '-wid', str(wid)]
         video_player = Popen(cmd + ['-'], stdin=PIPE)
 
     try:
@@ -270,9 +294,49 @@ def main():
     drone.subscribe(drone.EVENT_FILE_RECEIVED, handleFileReceived)
     speed = 30
     threat = False
+    retry = 3
+    container = None
+    while container is None and 0 < retry:
+        retry -= 1
+        try:
+            container = av.open(drone.get_video_stream())
+        except av.AVError as ave:
+            print(ave)
+            print('retry...')
+
+    # skip first 300 frames
+    frame_skip = 300
+    while True:
+        for frame in container.decode(video=0):
+            if 0 < frame_skip:
+                frame_skip = frame_skip - 1
+                continue
+            else:
+                break
+        break
+    # print("####################")
     try:
         while 1:
+            print("####################")
             time.sleep(0.01)  # loop with pygame.event.get() is too mush tight w/o some sleep
+            for frame in container.decode(video=0):
+                if 0 < frame_skip:
+                    frame_skip = frame_skip - 1
+                    continue
+                start_time = time.time()
+                image = cv2.cvtColor(np.array(frame.to_image()), cv2.COLOR_RGB2BGR)
+                # cv2.imshow('Original', image)
+                outputs = predictor(image)
+                v = Visualizer(image[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
+                out = v.draw_instance_predictions(outputs["instances"].to("cpu"))
+                cv2.imshow('Canny', out.get_image()[:, :, ::-1])
+                cv2.waitKey(1)
+                if frame.time_base < 1.0 / 60:
+                    time_base = 1.0 / 60
+                else:
+                    time_base = frame.time_base
+                frame_skip = int((time.time() - start_time) / time_base)
+                break
 
             global threat_counter
             if threat_counter > 0:
@@ -310,6 +374,7 @@ def main():
         if video_recorder:
             toggle_recording(drone, 1)
         drone.quit()
+        cv2.destroyAllWindows()
         exit(1)
 
 if __name__ == '__main__':
